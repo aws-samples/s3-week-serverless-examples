@@ -43,8 +43,8 @@ Resources:
       Environment:
         Variables:
           OUTPUT_BUCKET_NAME: !Ref ProcessingBucketName
-          HSV_LOWER: [36, 100, 100]
-          HSV_UPPER: [75 ,255, 255]
+          HSV_LOWER: '[36, 100, 100]'
+          HSV_UPPER: '[75 ,255, 255]'
       Events:
         FileUpload:
           Type: S3
@@ -63,7 +63,7 @@ Resources:
     Properties:
       CodeUri: compositeCode/
       Handler: composite.handler
-      Runtime: nodejs12
+      Runtime: nodejs12.x
       MemorySize: 2048
       Policies:
         - S3ReadPolicy:
