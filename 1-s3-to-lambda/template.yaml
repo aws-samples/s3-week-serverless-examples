@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: S3 bucket to Lambda function
+
+Parameters:
+  BucketName:
+    Type: String
+
+Resources:
+  ## S3 bucket
+  MyS3bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName    
+
+  ## Lambda function
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: myLambdaFunction/
+      Handler: app.handler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref BucketName
+      Events:
+        FileUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref MyS3bucket
+            Events: s3:ObjectCreated:*
+            Filter: 
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: '.jpg'            

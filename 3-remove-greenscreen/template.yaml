@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Chromakey and compositing service
+
+Parameters:
+  UploadBucketName:
+    Type: String
+  ProcessingBucketName:
+    Type: String
+  FinalBucketName:
+    Type: String
+
+Resources:
+  ## S3 bucket
+  UploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref UploadBucketName
+  ProcessingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref ProcessingBucketName
+  FinalBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref FinalBucketName
+
+  ## Lambda function - Chromakey processing
+  ChromakeyFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: chromakeyCode/
+      Handler: chromakey.lambda_handler
+      Runtime: python3.6
+      MemorySize: 4096
+      Layers:
+        - !Sub 'arn:aws:lambda:${AWS::Region}:678705476278:layer:Chromakey:1'
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref UploadBucketName
+        - S3CrudPolicy:
+            BucketName: !Ref ProcessingBucketName
+      Environment:
+        Variables:
+          OUTPUT_BUCKET_NAME: !Ref ProcessingBucketName
+          HSV_LOWER: [36, 100, 100]
+          HSV_UPPER: [75 ,255, 255]
+      Events:
+        FileUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref UploadBucket
+            Events: s3:ObjectCreated:*
+            Filter: 
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: '.jpg'            
+
+  ## Lambda function - Compositing
+  CompositingFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: compositeCode/
+      Handler: composite.handler
+      Runtime: nodejs12
+      MemorySize: 2048
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ProcessingBucketName
+        - S3CrudPolicy:
+            BucketName: !Ref FinalBucketName
+      Environment:
+        Variables:
+          OUTPUT_BUCKET_NAME: !Ref FinalBucketName            
+      Events:
+        FileUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref ProcessingBucket
+            Events: s3:ObjectCreated:*
+            Filter: 
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: '.jpg'            
