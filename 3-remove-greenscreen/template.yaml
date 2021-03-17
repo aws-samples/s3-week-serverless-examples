@@ -62,7 +62,7 @@ Resources:
     Type: AWS::Serverless::Function 
     Properties:
       CodeUri: compositeCode/
-      Handler: composite.handler
+      Handler: app.handler
       Runtime: nodejs12.x
       MemorySize: 2048
       Policies:
@@ -83,4 +83,4 @@ Resources:
               S3Key:
                 Rules:
                   - Name: suffix
-                    Value: '.jpg'            
+                    Value: '.png'            
